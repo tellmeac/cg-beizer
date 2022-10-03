@@ -92,12 +92,6 @@ class BeizerSplines(tkinter.Frame):
         left_click_event = "<Button-1>"
         self._cnv.bind(left_click_event, self._set_point)
 
-    def _center(self):
-        center_x = (self.winfo_screenwidth() - WIDTH) / 2
-        center_y = (self.winfo_screenheight() - HEIGHT) / 2
-
-        self._parent.geometry('%dx%d+%d+%d' % (WIDTH, HEIGHT, center_x, center_y))
-
     def _set_point(self, event: tkinter.Event):
         """
         Event handler to set new point
