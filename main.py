@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from os import stat
 import tkinter
 import math
 
@@ -27,10 +28,6 @@ class P:
 class BeizerSplines(tkinter.Frame):
 
     def __init__(self, parent: tkinter.Tk):
-        """
-        default constructor
-        :param parent: parent master widget
-        """
         super().__init__()
 
         self._parent = parent
@@ -43,8 +40,11 @@ class BeizerSplines(tkinter.Frame):
         self.pack(fill=tkinter.BOTH, expand=True)
 
         # attach action buttons
-        reset_btn = tkinter.Button(self, text="Hide helpers", command=self._drop_helpers)
-        reset_btn.pack(side=tkinter.RIGHT, padx=5, pady=5)
+        show_helpers_btn = tkinter.Button(self, text="Show helpers", command=self._show_helpers)
+        show_helpers_btn.pack(side=tkinter.RIGHT, padx=5, pady=5)
+
+        hide_btn = tkinter.Button(self, text="Hide helpers", command=self._hide_helpers)
+        hide_btn.pack(side=tkinter.RIGHT, padx=5, pady=5)
 
         reset_btn = tkinter.Button(self, text="Reset", command=self._reset)
         reset_btn.pack(side=tkinter.RIGHT, padx=5, pady=5)
@@ -107,6 +107,7 @@ class BeizerSplines(tkinter.Frame):
 
             start_point = pi2
 
+            # helpers
             self._render_point(aj1, size=3, color="blue", tag="helpers")
             self._render_point(aj2, size=3, color="blue", tag="helpers")
             self._render_point(bj, size=3, color="green", tag="helpers")
@@ -115,11 +116,14 @@ class BeizerSplines(tkinter.Frame):
 
             self._render_line(aj1, aj2, width=LINE_SIZE, color="green", tag="helpers")
             self._render_line(pi1, pi2, width=LINE_SIZE, color="purple", tag="helpers")
+            # straight between two points
             self._render_line(self._points[i], self._points[i + 1], width=LINE_SIZE, color="blue", tag="helpers")
 
+        # render last two
         self._render_beizer_line(self._points[-2], start_point, self._points[-1], self._points[-1])
         self._render_line(self._points[-2], self._points[-1], width=LINE_SIZE, color="blue", tag="helpers")
 
+        # prevent starting from the whole start
         self._points = self._points[-1:]
 
     def _render_beizer_line(self, p1: P, p2: P, p3: P, p4: P):
@@ -147,8 +151,11 @@ class BeizerSplines(tkinter.Frame):
         self._cnv.delete("all")
         self._points = []
 
-    def _drop_helpers(self):
-        self._cnv.delete("helpers")
+    def _hide_helpers(self):
+        self._cnv.itemconfig("helpers", state="hidden")
+
+    def _show_helpers(self):
+        self._cnv.itemconfig("helpers", state="normal")
 
     @staticmethod
     def _ratio_of_segments(p1: P, p2: P, p3: P) -> float:
