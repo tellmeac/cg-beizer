@@ -16,13 +16,37 @@ SPLINE_POINT_COLOR = "orange"
 BACKGROUND_COLOR = "white"
 
 
-@dataclass()
 class P:
     """
     Point value object
     """
     x: float
     y: float
+
+    def __init__(self, x: float, y: float):
+        self.x = x
+        self.y = y
+    
+    def __add__(self, other: "P") -> "P":
+        return P(x=self.x+other.x, y=self.y + other.y)
+
+    def __sub__(self, other: "P") -> "P":
+        return P(x=self.x-other.x, y=self.y-other.y)
+    
+    def __mul__(self, k) -> "P":
+        return P(x=self.x * k, y=self.y * k)
+    
+    def __rmul__(self, k) -> "P":
+        return self.__mul__(k)
+
+    def __truediv__(self, k) -> "P":
+        return P(x=self.x / k, y=self.y / k)
+
+    def __pow__(self, k: float) -> "P":
+        return P(x=self.x ** k, y=self.y ** k)
+
+    def __repr__(self) -> str:
+        return f"Point<x={self.x}, y={self.y}>"
 
 
 class BeizerSplines(tkinter.Frame):
@@ -76,34 +100,19 @@ class BeizerSplines(tkinter.Frame):
     def _start(self):
         start_point = self._points[0]
         for i in range(len(self._points) - 2):
-            aj1 = P(
-                x=(self._points[i].x + self._points[i + 1].x) / 2,
-                y=(self._points[i].y + self._points[i + 1].y) / 2,
-            )
+            p1, p2, p3 = self._points[i], self._points[i+1], self._points[i+2]
 
-            aj2 = P(
-                x=(self._points[i + 1].x + self._points[i + 2].x) / 2,
-                y=(self._points[i + 1].y + self._points[i + 2].y) / 2,
-            )
+            aj1 = (p1 + p2) / 2
+            aj2 = (p2 + p3) / 2
 
-            lam = self._ratio_of_segments(self._points[i], self._points[i + 1], self._points[i + 2])
+            lam = self._ratio_of_segments(p1, p2, p3)
 
-            bj = P(
-                x=(aj1.x + lam * aj2.x) / (1 + lam),
-                y=(aj1.y + lam * aj2.y) / (1 + lam),
-            )
+            bj = (aj1 + lam * aj2) / (1 + lam);
 
-            pi1 = P(
-                aj1.x - bj.x + self._points[i + 1].x,
-                aj1.y - bj.y + self._points[i + 1].y,
-            )
+            pi1 = aj1 - bj + p2
+            pi2 = aj2 - bj + p2
 
-            pi2 = P(
-                aj2.x - bj.x + self._points[i + 1].x,
-                aj2.y - bj.y + self._points[i + 1].y,
-            )
-
-            self._render_beizer_line(self._points[i], start_point, pi1, self._points[i + 1])
+            self._render_beizer_line(p1, start_point, pi1, p2)
 
             start_point = pi2
 
@@ -163,11 +172,7 @@ class BeizerSplines(tkinter.Frame):
 
     @staticmethod
     def _beizer_next_point(c1: P, c2: P, c3: P, c4: P, t: float) -> P:
-        return P(
-            t ** 3 * (c4.x - 3 * c3.x + 3 * c2.x - c1.x) + t ** 2 * (3 * c1.x - 6 * c2.x + 3 * c3.x) + t * (3 * c2.x - 3 * c1.x) + c1.x,
-            t ** 3 * (c4.y - 3 * c3.y + 3 * c2.y - c1.y) + t ** 2 * (3 * c1.y - 6 * c2.y + 3 * c3.y) + t * (3 * c2.y - 3 * c1.y) + c1.y,
-        )
-
+        return t ** 3 * (c4 - 3 * c3 + 3 * c2 - c1) + t ** 2 * (3 * c1 - 6 * c2 + 3 * c3) + t * (3 * c2 - 3 * c1) + c1
 
 if __name__ == '__main__':
     base = tkinter.Tk()
