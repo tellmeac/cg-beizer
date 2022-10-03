@@ -138,7 +138,7 @@ class BeizerSplines(tkinter.Frame):
             self._render_line(aj1, aj2, width=LINE_SIZE, color="green", tag="helpers")
             self._render_line(pi1, pi2, width=LINE_SIZE, color="purple", tag="helpers")
             # straight between two points
-            self._render_line(self._points[i], self._points[i + 1], width=LINE_SIZE, color="blue", tag="helpers")
+            self._render_line(p1, p2, width=LINE_SIZE, color="blue", tag="helpers")
 
         # render last two
         self._render_beizer_line(self._points[-2], start_point, self._points[-1], self._points[-1])
