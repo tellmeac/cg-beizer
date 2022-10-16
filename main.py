@@ -140,7 +140,6 @@ class BeizerSplines(tkinter.Frame):
         for a, b in helpers_lines:
             self._render_line(a, b, width=LINE_SIZE, color="orange", tag="helpers")
         for a in herlpers_points:
-            print(f"participant: {a}")
             self._render_point(a, size=POINT_SIZE, color="red", tag="helpers")
 
     def _render_beizer_line(self, p0: P, p1: P, p2: P, p3: P):
