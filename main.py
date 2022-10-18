@@ -14,8 +14,6 @@
 
 import tkinter
 import math
-from tracemalloc import start
-from turtle import width
 
 # 0 < t < 1
 LINE_PRECISION_STEP = 0.001
@@ -50,7 +48,7 @@ class P:
     
     def __mul__(self, k) -> "P":
         return P(x=self.x * k, y=self.y * k)
-    
+
     def __rmul__(self, k) -> "P":
         return self.__mul__(k)
 
