@@ -25,6 +25,21 @@ class Image:
         result = self._convolution_rgb(core)
         cv2.imwrite(f"result_{self._name}", result)
 
+    def _convolution_rgb(self, core: np.ndarray, offset=0) -> np.ndarray:
+        """
+        Performs a convolution according to the core
+        :param core: matrix for convolution
+        :return: processed RGB-image
+        """
+
+        blues, greens, reds = cv2.split(self._img)
+
+        return cv2.merge([
+            self._convolution(core, blues, offset),
+            self._convolution(core, greens, offset),
+            self._convolution(core, reds, offset)
+        ])
+
     def _convolution(self, core: np.ndarray, img: np.ndarray, offset: int):
         """
         Центральный элемент ядра располагается над пикселом
@@ -48,21 +63,6 @@ class Image:
                     continue
                 result[y - 1, x - 1] = data
         return result
-
-    def _convolution_rgb(self, core: np.ndarray, offset=0) -> np.ndarray:
-        """
-        Performs a convolution according to the core
-        :param core: matrix for convolution
-        :return: processed RGB-image
-        """
-
-        blues, greens, reds = cv2.split(self._img)
-
-        return cv2.merge([
-            self._convolution(core, blues, offset),
-            self._convolution(core, greens, offset),
-            self._convolution(core, reds, offset)
-        ])
 
 
 if __name__ == "__main__":

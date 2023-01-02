@@ -78,10 +78,10 @@ class Image:
         a = self._transform_matrix()
         ia = np.linalg.inv(a[:, :2])
 
+        # For every (x`, y`) new pixel in result search (x, y) of old image with A^-1
         result = np.zeros(self._img.shape, np.uint8)
         for i in range(self.height):
             for j in range(self.width):
-                # (1,1) shaped arrays
                 x, y = np.dot(ia, np.array([[i], [j]]) - a[:, 2:])
                 x, y = round(x[0]), round(y[0])
 
@@ -107,7 +107,7 @@ class Image:
         input_cords = np.array([
             [self._points[0][0], self._points[1][0], self._points[2][0]],
             [self._points[0][1], self._points[1][1], self._points[2][1]],
-            [1, 1, 1],
+            [0, 0, 1],
         ])
 
         out_points = np.array(

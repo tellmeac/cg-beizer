@@ -11,7 +11,6 @@ import (
 // Nice images:
 // go run main.go -f dragon -l 12 -i 4K
 // go run main.go -f hilbert -l 7 -i 4K
-// go run main.go -f sierpArrow -l 7 -i 4K
 // go run main.go -f sierpTri -l 7 -i 4K
 func main() {
 	which := flag.String("f", "hilbert", "Type of fractal to generate.")
