@@ -66,5 +66,4 @@ class Image:
 
 
 if __name__ == "__main__":
-    my_image = Image("sample.png")
-    my_image.process(BLUR)
+    Image("sample.png").process(SHARPEN)
