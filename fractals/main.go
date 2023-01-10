@@ -62,17 +62,37 @@ func drawFractals(which, imgShape string, level int) {
 		startD = 180.0
 		segLen := (imgHeight - pad) / math.Exp2(float64(level))
 		go GenerateSierpinskiTriangle(level, instructions, segLen)
+	case "tree":
+		segLen := 20.0
+		startX = imgWidth / 2
+		startY = 0.34 * imgHeight
+		startD = 90
+
+		// create a new world to draw in
+		w := turtle.NewWorld(int(imgWidth), int(imgHeight))
+
+		td := turtle.NewTurtleDraw(w)
+		td.SetPos(startX, startY)
+		td.SetHeading(startD)
+		td.PenDown()
+		td.SetColor(turtle.White)
+
+		GenerateTree(level, td, segLen)
+
+		outImgName := fmt.Sprintf("%s_%02d_%s.png", which, level, imgShape)
+		_ = w.SaveImage(outImgName)
+
+		return
 	}
 
 	// create a new world to draw in
 	w := turtle.NewWorld(int(imgWidth), int(imgHeight))
 
-	// create and setup a turtle in the right place
 	td := turtle.NewTurtleDraw(w)
 	td.SetPos(startX, startY)
 	td.SetHeading(startD)
 	td.PenDown()
-	td.SetColor(turtle.DarkOrange)
+	td.SetColor(turtle.White)
 
 	// draw the fractal
 	for i := range instructions {
@@ -80,27 +100,78 @@ func drawFractals(which, imgShape string, level int) {
 	}
 
 	outImgName := fmt.Sprintf("%s_%02d_%s.png", which, level, imgShape)
-	w.SaveImage(outImgName)
+	_ = w.SaveImage(outImgName)
 }
 
 func getHilbertSegmentLen(level int, size float64) float64 {
 	return size / (math.Exp2(float64(level-1))*4 - 1)
 }
 
-// Instructions generates instructions for a general Lindenmayer system.
-//
-// level: recursion level to reach.
-// instructions: channel where the instructions will be sent.
-// remaining: set to the axiom.
-// rules: production rules.
-// angle: how much to rotate.
-// forward: how much to move forward.
-//
-// Two mildly different rewrite rules can be used:
-// using ABCD, the forward movement must be explicit, using an F.
-// using XYWZ, the forward movement is done when the base of the recursion is reached.
-//
-// https://en.wikipedia.org/wiki/L-system
+type Save struct {
+	X     float64
+	Y     float64
+	Angle float64
+}
+
+// InstructionsWithSave supports [, ] in axioms for L-systems.
+func InstructionsWithSave(
+	level int,
+	td *turtle.TurtleDraw,
+	remaining string,
+	rules map[byte]string,
+	angle float64,
+	forward float64,
+	saves []Save,
+) string {
+	for len(remaining) > 0 {
+		curChar := remaining[0]
+		remaining = remaining[1:]
+
+		fmt.Printf("%3d %c %+v\n", level, curChar, remaining)
+
+		switch curChar {
+		case '|':
+			return remaining
+		case '[':
+			saves = append(saves, Save{
+				X:     td.X,
+				Y:     td.Y,
+				Angle: td.Deg,
+			})
+		case ']':
+			if len(saves) == 0 {
+				panic("Possibly wrong axiom, expected to have checkpoint to recover for ']'")
+			}
+			s := saves[len(saves)-1]
+			saves = saves[:len(saves)-1]
+
+			td.SetPos(s.X, s.Y)
+			td.SetHeading(s.Angle)
+		case '+':
+			td.DoInstruction(turtle.Instruction{Cmd: turtle.CmdLeft, Amount: angle})
+		case '-':
+			td.DoInstruction(turtle.Instruction{Cmd: turtle.CmdRight, Amount: angle})
+		case 'F':
+			td.DoInstruction(turtle.Instruction{Cmd: turtle.CmdForward, Amount: forward})
+		case 'A', 'B':
+			if level > 0 {
+				remaining = rules[curChar] + "|" + remaining
+				remaining = InstructionsWithSave(level-1, td, remaining, rules, angle, forward, saves)
+			}
+		case 'X', 'Y':
+			if level == 0 {
+				td.DoInstruction(turtle.Instruction{Cmd: turtle.CmdForward, Amount: forward})
+			} else if level > 0 {
+				remaining = rules[curChar] + "|" + remaining
+				remaining = InstructionsWithSave(level-1, td, remaining, rules, angle, forward, saves)
+			}
+		}
+	}
+
+	return ""
+}
+
+// Instructions generates instructions for a general L-system.
 func Instructions(
 	level int,
 	instructions chan<- turtle.Instruction,
@@ -113,7 +184,7 @@ func Instructions(
 		curChar := remaining[0]
 		remaining = remaining[1:]
 
-		// fmt.Printf("%3d %c %+v\n", level, curChar, remaining)
+		fmt.Printf("%3d %c %+v\n", level, curChar, remaining)
 
 		switch curChar {
 		case '|':
@@ -122,16 +193,16 @@ func Instructions(
 			instructions <- turtle.Instruction{Cmd: turtle.CmdLeft, Amount: angle}
 		case '-':
 			instructions <- turtle.Instruction{Cmd: turtle.CmdRight, Amount: angle}
+		// move forward explicitly when an 'F' is encountered
 		case 'F':
 			instructions <- turtle.Instruction{Cmd: turtle.CmdForward, Amount: forward}
-		// move forward explicitly when an 'F' is encountered
-		case 'A', 'B', 'C', 'D':
+		case 'A', 'B':
 			if level > 0 {
 				remaining = rules[curChar] + "|" + remaining
 				remaining = Instructions(level-1, instructions, remaining, rules, angle, forward)
 			}
 		// move forward when the base of the recursion is reached
-		case 'X', 'Y', 'W', 'Z':
+		case 'X', 'Y':
 			if level == 0 {
 				instructions <- turtle.Instruction{Cmd: turtle.CmdForward, Amount: forward}
 			} else if level > 0 {
@@ -153,7 +224,6 @@ func GenerateHilbert(level int, instructions chan<- turtle.Instruction, forward 
 }
 
 // GenerateDragon
-// https://en.wikipedia.org/wiki/Dragon_curve
 // https://en.wikipedia.org/wiki/L-system#Example_6:_Dragon_curve
 func GenerateDragon(level int, instructions chan<- turtle.Instruction, forward float64) {
 	rules := map[byte]string{'X': "X+Y", 'Y': "X-Y"}
@@ -165,4 +235,9 @@ func GenerateDragon(level int, instructions chan<- turtle.Instruction, forward f
 func GenerateSierpinskiTriangle(level int, instructions chan<- turtle.Instruction, forward float64) {
 	rules := map[byte]string{'X': "X-Y+X+Y-X", 'Y': "YY"}
 	Instructions(level, instructions, "X-Y-Y", rules, 120, forward)
+}
+
+func GenerateTree(level int, td *turtle.TurtleDraw, forward float64) {
+	rules := map[byte]string{'X': "X[+X]X[-X][X]"}
+	InstructionsWithSave(level, td, "X", rules, forward, 25.7, nil)
 }
